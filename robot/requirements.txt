@@ -1,0 +1,6 @@
+pvporcupine
+pvrecorder
+SpeechRecognition
+requests
+pygame
+python-dotenv

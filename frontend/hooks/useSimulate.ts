@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { SimulateResponse } from '@/types';
 
 export function useSimulate(userId = 'demo') {
@@ -8,8 +8,15 @@ export function useSimulate(userId = 'demo') {
   const [loading,     setLoading]     = useState(false);
   const [error,       setError]       = useState<string | null>(null);
 
+  // Lock para evitar múltiples requests simultáneos (causa 422 en cadena)
+  const inFlightRef = useRef(false);
+
   const simulate = useCallback(async (text: string, asrConfidence = 1.0) => {
-    if (!text.trim()) return null;
+    const trimmed = text.trim();
+    if (!trimmed)        return null;   // nunca enviar texto vacío
+    if (inFlightRef.current) return null; // ya hay un request en vuelo
+
+    inFlightRef.current = true;
     setError(null);
     setSimulation(null);
     setLoading(true);
@@ -18,10 +25,10 @@ export function useSimulate(userId = 'demo') {
       const res  = await fetch('/api/orders/simulate', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ text: text.trim(), userId, asrConfidence }),
+        body:    JSON.stringify({ text: trimmed, userId, asrConfidence }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message ?? 'Error al simular');
+      if (!res.ok) throw new Error(data.message ?? `Error ${res.status}`);
       setSimulation(data);
       return data as SimulateResponse;
     } catch (e: unknown) {
@@ -29,10 +36,15 @@ export function useSimulate(userId = 'demo') {
       return null;
     } finally {
       setLoading(false);
+      inFlightRef.current = false;
     }
   }, [userId]);
 
-  const reset = useCallback(() => { setSimulation(null); setError(null); }, []);
+  const reset = useCallback(() => {
+    setSimulation(null);
+    setError(null);
+    inFlightRef.current = false;
+  }, []);
 
   return { simulation, loading, error, simulate, reset };
 }

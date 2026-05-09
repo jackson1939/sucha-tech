@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: 'Vibe Broker — Web3 por voz',
   description: 'El "Alexa" de las transacciones Web3. Swaps y bridges en Solana con confirmación por voz.',
   keywords: ['solana', 'web3', 'defi', 'voice', 'swap', 'voz'],
+  icons: { icon: 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎙️</text></svg>' },
 };
 
 export const viewport: Viewport = {

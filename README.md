@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Vibe Broker 🎙️
 ### El "Alexa" de las transacciones Web3
 
@@ -153,3 +154,7 @@ chmod +x gabezo/start.sh gabezo/stop.sh gabezo/run_tests.sh
 ./gabezo/run_tests.sh  # ejecuta 7 test-cases
 ./gabezo/stop.sh       # apaga y empaqueta logs
 ```
+=======
+# sucha-tech
+un asistente de solana
+>>>>>>> 58c40ea5fc3d5fb96b1d6eac7fd786518b05f2d5

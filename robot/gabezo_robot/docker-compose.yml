@@ -52,9 +52,11 @@ services:
       retries: 20
 
   lifi-mock:
-    build:
-      context: ../../gabezo/mocks
-      dockerfile: Dockerfile.lifi
+    image: node:18-alpine
+    working_dir: /app
+    volumes:
+      - ../../gabezo/mocks:/app
+    command: node lifi-mock.js
     ports:
       - "3001:3001"
 

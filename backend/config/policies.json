@@ -1,0 +1,9 @@
+{
+  "voiceOnlyEnabled": true,
+  "voiceOnlyMaxPerOp": 0.1,
+  "voiceOnlyDailyCap": 0.5,
+  "voiceConfidenceMin": 0.8,
+  "sessionKeysAllowed": false,
+  "operationLimitSol": 0.5,
+  "dailyLimitSol": 2.0
+}

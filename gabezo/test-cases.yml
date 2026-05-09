@@ -1,0 +1,156 @@
+name: Vibe Broker — Suite de pruebas Gabezo
+version: "1.0"
+base_url: "http://localhost:4000"
+
+cases:
+
+  - id: TC-01
+    name: Happy Path — compra voice-only
+    description: Flujo completo sin errores. Política voice-only activa, confianza alta, monto pequeño.
+    steps:
+      - name: Simular orden
+        method: POST
+        path: /api/orders/simulate
+        body:
+          text: "compra 0.05 SOL"
+          userId: "demo"
+          asrConfidence: 0.95
+        expect:
+          status: 200
+          fields:
+            requiresDoubleConfirmation: false
+            intent.tokenTo: "SOL"
+      - name: Ejecutar orden (voice-only)
+        method: POST
+        path: /api/orders/execute
+        body:
+          simulationId: "{{TC-01.step1.simulationId}}"
+          userId: "demo"
+          confirmation:
+            type: "voice"
+            signature: "ZGVtby1zaWduYXR1cmUtZGV2bmV0"
+        expect:
+          status: 200
+          fields:
+            status: "submitted"
+    expected: PASS
+
+  - id: TC-02
+    name: LI.FI timeout — fallback a mock
+    description: El mock de LI.FI tarda más de 8 s. El backend debe responder con ruta de fallback.
+    setup:
+      - POST http://localhost:3001/gabezo/timeout-next
+    steps:
+      - name: Simular con LI.FI caído
+        method: POST
+        path: /api/orders/simulate
+        body:
+          text: "swap 10 USDC por SOL"
+          userId: "demo"
+          asrConfidence: 0.90
+        expect:
+          status: 200
+          fields:
+            route.provider: "LI.FI-mock"
+    expected: PASS
+
+  - id: TC-03
+    name: ASR baja confianza — doble confirmación requerida
+    description: confidence < 0.80 debe forzar requiresDoubleConfirmation = true.
+    steps:
+      - name: Simular con confianza baja
+        method: POST
+        path: /api/orders/simulate
+        body:
+          text: "compra 0.05 SOL"
+          userId: "demo"
+          asrConfidence: 0.65
+        expect:
+          status: 200
+          fields:
+            requiresDoubleConfirmation: true
+            policyReason: "asr_confidence_low:0.65"
+    expected: PASS
+
+  - id: TC-04
+    name: Firma cancelada — no se propaga
+    description: Ejecutar con signature inválida; el backend usa hash simulado y responde submitted.
+    steps:
+      - name: Simular orden
+        method: POST
+        path: /api/orders/simulate
+        body:
+          text: "compra 0.02 SOL"
+          userId: "demo"
+          asrConfidence: 0.92
+        expect:
+          status: 200
+      - name: Ejecutar con signature vacía
+        method: POST
+        path: /api/orders/execute
+        body:
+          simulationId: "{{TC-04.step1.simulationId}}"
+          userId: "demo"
+          confirmation:
+            type: "voice"
+            signature: ""
+        expect:
+          status: 400
+          fields:
+            code: "MISSING_FIELDS"
+    expected: PASS
+
+  - id: TC-05
+    name: Stress básico — 10 simulaciones concurrentes
+    description: 10 peticiones simultáneas a /simulate deben responder todas en < 5 s.
+    type: stress
+    concurrency: 10
+    steps:
+      - name: Simular concurrente
+        method: POST
+        path: /api/orders/simulate
+        body:
+          text: "compra 0.01 SOL"
+          userId: "demo"
+          asrConfidence: 0.88
+        expect:
+          status: 200
+    thresholds:
+      max_latency_ms: 5000
+      success_rate_pct: 100
+    expected: PASS
+
+  - id: TC-06
+    name: LI.FI fallo 503 — fallback a mock
+    description: El mock de LI.FI devuelve 503. El backend debe caer al mock interno.
+    setup:
+      - POST http://localhost:3001/gabezo/fail-next
+    steps:
+      - name: Simular con LI.FI en error
+        method: POST
+        path: /api/orders/simulate
+        body:
+          text: "compra 0.03 SOL"
+          userId: "demo"
+          asrConfidence: 0.91
+        expect:
+          status: 200
+          fields:
+            route.provider: "LI.FI-mock"
+    expected: PASS
+
+  - id: TC-07
+    name: Intención desconocida — 422
+    description: Texto sin intención válida debe retornar 422 UNKNOWN_INTENT.
+    steps:
+      - name: Texto sin intención
+        method: POST
+        path: /api/orders/simulate
+        body:
+          text: "hola qué tal"
+          userId: "demo"
+        expect:
+          status: 422
+          fields:
+            code: "UNKNOWN_INTENT"
+    expected: PASS

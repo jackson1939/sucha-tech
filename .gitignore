@@ -1,0 +1,27 @@
+node_modules/
+.next/
+out/
+dist/
+.env
+.env.local
+*.env.local
+
+# Anchor / Rust
+onchain/target/
+onchain/**/.anchor/
+
+# Logs Gabezo
+gabezo/logs/*.log
+gabezo/logs/*.tar.gz
+gabezo/gabezo.pids
+gabezo/tmp/
+
+# Cache TTS
+tmp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel

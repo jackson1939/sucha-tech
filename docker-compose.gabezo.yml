@@ -1,0 +1,62 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=test
+      - PORT=4000
+      - SOLANA_RPC_URL=http://rpc-mock:8899
+      - LIFI_API_KEY=mock
+      - ELEVENLABS_API_KEY=mock
+      - DB_URL=postgres://vibebroker:vibebroker@postgres:5432/vibebroker
+      - VOICE_CONFIDENCE_MIN=0.8
+      - VOICE_ONLY_MAX_PER_OP=0.1
+      - VOICE_ONLY_DAILY_CAP=0.5
+    depends_on:
+      - postgres
+      - lifi-mock
+      - rpc-mock
+    volumes:
+      - ./backend/src:/app/src
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: vibebroker
+      POSTGRES_PASSWORD: vibebroker
+      POSTGRES_DB: vibebroker
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./backend/src/db/migrations:/docker-entrypoint-initdb.d
+
+  lifi-mock:
+    build:
+      context: ./gabezo/mocks
+      dockerfile: Dockerfile.lifi
+    ports:
+      - "3001:3001"
+
+  rpc-mock:
+    build:
+      context: ./gabezo/mocks
+      dockerfile: Dockerfile.rpc
+    ports:
+      - "8899:8899"
+
+  tts-proxy:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./gabezo/mocks:/app
+    command: node tts-proxy.js
+    ports:
+      - "3002:3002"
+    environment:
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-mock}
+      - TTS_CACHE_DIR=/app/tmp/tts

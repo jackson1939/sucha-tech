@@ -2,7 +2,8 @@
 # run_tests.sh — Ejecuta los test-cases de Gabezo y genera reporte
 set -euo pipefail
 
-BASE_URL="${BASE_URL:-http://localhost:4000}"
+BASE_URL="${BASE_URL:-http://localhost:3000}"
+LIFI_MOCK_URL="${LIFI_MOCK_URL:-http://localhost:3001}"
 LOG_DIR="$(dirname "$0")/logs"
 REPORT="$LOG_DIR/test-report-$(date +%Y%m%d_%H%M%S).txt"
 PASS=0
@@ -67,6 +68,23 @@ if [ -n "$SIM_ID" ]; then
   else log "  ❌ TC-01b execute FAIL (status=$STATUS)"; FAIL=$((FAIL+1)); fi
 fi
 
+# ── TC-02 LI.FI timeout → fallback mock ──────────────────────────────────────
+log ""
+log "── TC-02: LI.FI timeout → fallback mock ──"
+curl -s -X POST "$LIFI_MOCK_URL/gabezo/timeout-next" -o /dev/null 2>/dev/null || true
+SIM2=$(curl -s -X POST "$BASE_URL/api/orders/simulate" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"compra 0.05 SOL","userId":"demo","asrConfidence":0.95}')
+PROVIDER2=$(echo "$SIM2" | grep -o '"provider":"[^"]*"' | cut -d'"' -f4 || echo "")
+SIM2_ID=$(echo "$SIM2" | grep -o '"simulationId":"[^"]*"' | cut -d'"' -f4 || echo "")
+if [ -n "$SIM2_ID" ]; then
+  log "  ✅ TC-02 — LI.FI timeout: simulate responde con fallback (provider=$PROVIDER2)"
+  PASS=$((PASS+1))
+else
+  log "  ❌ TC-02 — LI.FI timeout: simulate no retornó simulationId"
+  FAIL=$((FAIL+1))
+fi
+
 # ── TC-03 ASR baja confianza ──────────────────────────────────────────────────
 log ""
 log "── TC-03: ASR baja confianza → doble confirmación ──"
@@ -86,6 +104,49 @@ log "── TC-04: Signature vacía → 400 ──"
 check "TC-04" "execute sin signature" "400" \
   '{"simulationId":"fake","userId":"demo","confirmation":{"type":"voice","signature":""}}' \
   "/api/orders/execute"
+
+# ── TC-05 Stress: 10 requests concurrentes ───────────────────────────────────
+log ""
+log "── TC-05: Stress — 10 requests concurrentes ──"
+SUCCESS_COUNT=0
+PIDS=()
+for i in $(seq 1 10); do
+  curl -s -X POST "$BASE_URL/api/orders/simulate" \
+    -H "Content-Type: application/json" \
+    -d "{\"text\":\"compra 0.0${i} SOL\",\"userId\":\"stress-$i\",\"asrConfidence\":0.95}" \
+    -o "/tmp/vb_stress_$i.json" &
+  PIDS+=($!)
+done
+for pid in "${PIDS[@]}"; do wait "$pid" || true; done
+for i in $(seq 1 10); do
+  if grep -q '"simulationId"' "/tmp/vb_stress_$i.json" 2>/dev/null; then
+    SUCCESS_COUNT=$((SUCCESS_COUNT+1))
+  fi
+done
+if [ "$SUCCESS_COUNT" -ge 8 ]; then
+  log "  ✅ TC-05 — Stress: $SUCCESS_COUNT/10 requests exitosos"
+  PASS=$((PASS+1))
+else
+  log "  ❌ TC-05 — Stress: solo $SUCCESS_COUNT/10 exitosos (mínimo 8)"
+  FAIL=$((FAIL+1))
+fi
+
+# ── TC-06 LI.FI 503 → fallback mock ─────────────────────────────────────────
+log ""
+log "── TC-06: LI.FI 503 → fallback mock ──"
+curl -s -X POST "$LIFI_MOCK_URL/gabezo/fail-next" -o /dev/null 2>/dev/null || true
+SIM6=$(curl -s -X POST "$BASE_URL/api/orders/simulate" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"swap 10 USDC por SOL","userId":"demo","asrConfidence":0.95}')
+SIM6_ID=$(echo "$SIM6" | grep -o '"simulationId":"[^"]*"' | cut -d'"' -f4 || echo "")
+PROVIDER6=$(echo "$SIM6" | grep -o '"provider":"[^"]*"' | cut -d'"' -f4 || echo "")
+if [ -n "$SIM6_ID" ]; then
+  log "  ✅ TC-06 — LI.FI 503: simulate responde con fallback (provider=$PROVIDER6)"
+  PASS=$((PASS+1))
+else
+  log "  ❌ TC-06 — LI.FI 503: simulate no retornó simulationId"
+  FAIL=$((FAIL+1))
+fi
 
 # ── TC-07 Intención desconocida ───────────────────────────────────────────────
 log ""

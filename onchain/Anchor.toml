@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-vibe_broker = "VBroKERprogramId1111111111111111111111111111"
+vibe_broker = "DLUY5F8d4TtRxWXgJQMXH7hhaDTDbnqtkZsVbWDtMsYx"
 
 [registry]
 url = "https://api.apr.dev"

@@ -69,8 +69,9 @@ npm run dev               # → http://localhost:3000
 PORT=3000
 SOLANA_RPC_URL=https://api.devnet.solana.com
 SOLANA_NETWORK=devnet
-RECEIPT_PROGRAM_ID=YourAnchorProgramIdHere
+RECEIPT_PROGRAM_ID=DLUY5F8d4TtRxWXgJQMXH7hhaDTDbnqtkZsVbWDtMsYx
 NEXT_PUBLIC_SOLANA_NETWORK=devnet
+SOLANA_SIGNER_KEYPAIR=<array JSON>
 
 LIFI_API_KEY=YOUR_LIFI_KEY           # sin clave: usa mock automático
 ELEVENLABS_API_KEY=YOUR_KEY          # sin clave: TTS silencioso
@@ -187,6 +188,9 @@ anchor deploy --provider.cluster devnet
 ```
 
 El programa `RecordReceipt` registra cada operación con: `simulation_id`, `amount_lamports`, `token_from`, `token_to`, `confirmation_type`, `timestamp`. Emite evento `ReceiptRecorded` visible en Solana Explorer.
+
+Programa verificable en Solana Explorer:
+https://explorer.solana.com/address/DLUY5F8d4TtRxWXgJQMXH7hhaDTDbnqtkZsVbWDtMsYx?cluster=devnet
 
 ---
 

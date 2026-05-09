@@ -123,8 +123,9 @@ Archivos clave modificados en el PR:
 ```bash
 SOLANA_RPC_URL=https://api.devnet.solana.com
 SOLANA_NETWORK=devnet
-RECEIPT_PROGRAM_ID=YourAnchorProgramIdHere
+RECEIPT_PROGRAM_ID=DLUY5F8d4TtRxWXgJQMXH7hhaDTDbnqtkZsVbWDtMsYx
 NEXT_PUBLIC_SOLANA_NETWORK=devnet
+SOLANA_SIGNER_KEYPAIR=<array JSON>
 LIFI_API_KEY=YOUR_LIFI_KEY           # sin clave: mock automático
 ELEVENLABS_API_KEY=YOUR_KEY
 ELEVENLABS_VOICE_ID=EXAVITQu4vr4xnSDxMaL

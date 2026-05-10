@@ -1,8 +1,12 @@
 import type { ParsedIntent } from '@/types';
 
 const TOKENS: Record<string, string> = {
-  sol:'SOL', solana:'SOL', usdc:'USDC', usdt:'USDT',
-  eth:'ETH', ether:'ETH', ethereum:'ETH', btc:'BTC', bitcoin:'BTC', bnb:'BNB',
+  sol:'SOL', soles:'SOL', solana:'SOL', solanas:'SOL',
+  usdc:'USDC', usdcs:'USDC',
+  usdt:'USDT', usdts:'USDT', tether:'USDT',
+  eth:'ETH', eths:'ETH', ether:'ETH', ethereum:'ETH', ethers:'ETH',
+  btc:'BTC', btcs:'BTC', bitcoin:'BTC', bitcoins:'BTC',
+  bnb:'BNB', bnbs:'BNB',
 };
 
 const norm = (t: string) => TOKENS[t.toLowerCase()] ?? t.toUpperCase();

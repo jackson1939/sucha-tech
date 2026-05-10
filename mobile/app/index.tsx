@@ -169,8 +169,8 @@ export default function HomeScreen() {
             </Pressable>
           </View>
 
-          {/* Error */}
-          {!!simError && (
+          {/* Error — solo si no hay simulación exitosa */}
+          {!!simError && !sim && (
             <View style={styles.errorBox}>
               <Text style={styles.errorText}>⚠️ {simError}</Text>
             </View>

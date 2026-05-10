@@ -8,6 +8,7 @@ import gsap from 'gsap';
 
 const NAV = [
   { href: '/',         label: 'Inicio',    icon: '🏠' },
+  { href: '/submit',   label: 'Enviar',    icon: '🚀' },
   { href: '/history',  label: 'Historial', icon: '📋' },
   { href: '/settings', label: 'Ajustes',   icon: '⚙️' },
 ];

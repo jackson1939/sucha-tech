@@ -20,6 +20,10 @@ export function useExecute(userId = 'demo') {
       // En Devnet/demo: firma placeholder
       const demoSig = Buffer.from('demo-signature-devnet').toString('base64');
 
+      // En modo autónomo con doble-confirmación requerida, pasamos type:'double'
+      // sin PIN real (devnet demo). El backend acepta esto con la firma de demo.
+      const confirmationType = simulation.requiresDoubleConfirmation ? 'double' : 'voice';
+
       const res  = await fetch('/api/orders/execute', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -27,8 +31,8 @@ export function useExecute(userId = 'demo') {
           simulationId: simulation.simulationId,
           userId,
           confirmation: {
-            type:      simulation.requiresDoubleConfirmation ? 'double' : 'voice',
-            pin,
+            type:      confirmationType,
+            pin:       pin ?? undefined,   // undefined si no hay PIN (auto mode)
             signature: demoSig,
           },
         }),

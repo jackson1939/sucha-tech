@@ -1,144 +1,155 @@
 'use client';
 
 import { useCallback, useRef, useEffect } from 'react';
+import type { VoiceConfig } from './useVoiceSettings';
+
+export interface SpeechHandle {
+  speak:            (text: string, useElevenLabs?: boolean) => Promise<void>;
+  speakThenListen:  (text: string, startListening: () => void) => Promise<void>;
+  stop:             () => void;
+  isSpeaking:       () => boolean;
+}
 
 /**
- * useSpeech — TTS con dos niveles:
- * 1. Web Speech API (nativo, instantáneo, sin costo) — siempre disponible
- * 2. ElevenLabs via /api/voice/tts (premium, voz realista) — si API key configurada
+ * useSpeech — TTS dual:
+ * 1. Web Speech API  (nativo, gratuito, instantáneo)
+ * 2. ElevenLabs      (premium, voz realista) si hay API key
  *
- * La app habla automáticamente al mostrar simulaciones y al confirmar/rechazar.
+ * speakThenListen(): habla y cuando TERMINA activa el micrófono automáticamente.
  */
-export function useSpeech() {
-  const audioRef   = useRef<HTMLAudioElement | null>(null);
-  const isSpeaking = useRef(false);
+export function useSpeech(voiceConfig?: VoiceConfig): SpeechHandle {
+  const audioRef    = useRef<HTMLAudioElement | null>(null);
+  const speakingRef = useRef(false);
 
-  // Limpiar al desmontar
   useEffect(() => {
     return () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).speechSynthesis?.cancel();
-      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+      audioRef.current?.pause();
     };
   }, []);
 
-  /** Para todo audio en curso */
   const stop = useCallback(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).speechSynthesis?.cancel();
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
-    isSpeaking.current = false;
+    speakingRef.current = false;
   }, []);
 
-  /**
-   * Habla con Web Speech API (navegador).
-   * Prioriza voces en español si están disponibles.
-   */
+  const isSpeaking = useCallback(() => speakingRef.current, []);
+
+  // ── Web Speech API ─────────────────────────────────────────────────────────
   const speakNative = useCallback((text: string): Promise<void> => {
     return new Promise((resolve) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const synth = typeof window !== 'undefined' ? (window as any).speechSynthesis : null;
+      const synth = (window as any).speechSynthesis;
       if (!synth) { resolve(); return; }
 
       synth.cancel();
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const utterance    = new (window as any).SpeechSynthesisUtterance(text);
-      utterance.lang     = 'es-MX';
-      utterance.rate     = 0.92;
-      utterance.pitch    = 1.0;
-      utterance.volume   = 1.0;
+      const utterance = new (window as any).SpeechSynthesisUtterance(text);
+      utterance.lang  = voiceConfig?.lang ? `${voiceConfig.lang}-MX` : 'es-MX';
+      utterance.rate  = voiceConfig?.rate  ?? 0.92;
+      utterance.pitch = voiceConfig?.pitch ?? 1.0;
 
-      // Buscar la mejor voz en español disponible
-      const loadVoices = () => {
+      // Buscar la voz configurada o la mejor disponible
+      const loadAndSpeak = () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const voices   = synth.getVoices() as any[];
-        const priorities = ['es-MX', 'es-US', 'es-ES', 'es'];
-        let best: unknown;
-        for (const lang of priorities) {
-          best = voices.find((v) => v.lang === lang && !v.name.includes('compact'));
-          if (best) break;
+        const voices = synth.getVoices() as any[];
+
+        if (voiceConfig?.voiceName) {
+          const picked = voices.find((v) => v.name === voiceConfig.voiceName);
+          if (picked) utterance.voice = picked;
+        } else {
+          // fallback: mejor voz en español
+          const priorities = ['es-MX', 'es-US', 'es-ES', 'es'];
+          let best: unknown;
+          for (const lang of priorities) {
+            best = voices.find((v) => v.lang === lang && !v.name.toLowerCase().includes('compact'));
+            if (best) break;
+          }
+          if (!best) best = voices.find((v: { lang: string }) => v.lang.startsWith('es'));
+          if (best) utterance.voice = best;
         }
-        if (!best) best = voices.find((v: { lang: string }) => v.lang.startsWith('es'));
-        if (best) utterance.voice = best;
+
+        utterance.onend   = () => { speakingRef.current = false; resolve(); };
+        utterance.onerror = () => { speakingRef.current = false; resolve(); };
+
+        speakingRef.current = true;
+        synth.speak(utterance);
+
+        // Chrome bug: síntesis se congela si la pestaña pierde foco
+        // Re-touch cada 10s para mantenerla viva
+        const keepAlive = setInterval(() => {
+          if (!speakingRef.current) { clearInterval(keepAlive); return; }
+          synth.pause(); synth.resume();
+        }, 10_000);
+        utterance.onend = () => { clearInterval(keepAlive); speakingRef.current = false; resolve(); };
+        utterance.onerror = () => { clearInterval(keepAlive); speakingRef.current = false; resolve(); };
       };
 
-      // Chrome carga voces async
-      if (synth.getVoices().length) {
-        loadVoices();
-      } else {
-        synth.addEventListener('voiceschanged', loadVoices, { once: true });
-      }
-
-      utterance.onend   = () => { isSpeaking.current = false; resolve(); };
-      utterance.onerror = () => { isSpeaking.current = false; resolve(); };
-
-      isSpeaking.current = true;
-      synth.speak(utterance);
+      if (synth.getVoices().length) { loadAndSpeak(); }
+      else { synth.addEventListener('voiceschanged', loadAndSpeak, { once: true }); }
     });
-  }, []);
+  }, [voiceConfig]);
 
-  /**
-   * Habla con ElevenLabs (premium).
-   * Si el servidor no tiene API key, cae a Web Speech API.
-   */
+  // ── ElevenLabs TTS ────────────────────────────────────────────────────────
   const speakElevenLabs = useCallback(async (text: string): Promise<void> => {
     try {
       const res = await fetch('/api/voice/tts', {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ text }),
       });
-
-      // Si devolvió JSON (modo mock), usar Web Speech
       const ct = res.headers.get('Content-Type') ?? '';
-      if (!res.ok || !ct.includes('audio/mpeg')) {
-        await speakNative(text);
-        return;
-      }
+      if (!res.ok || !ct.includes('audio/mpeg')) { await speakNative(text); return; }
 
-      const blob = await res.blob();
-      const url  = URL.createObjectURL(blob);
+      const blob  = await res.blob();
+      const url   = URL.createObjectURL(blob);
       const audio = new Audio(url);
       audioRef.current = audio;
 
       return new Promise((resolve) => {
-        audio.onended = () => { URL.revokeObjectURL(url); isSpeaking.current = false; resolve(); };
-        audio.onerror = () => { speakNative(text).then(resolve); };
-        isSpeaking.current = true;
-        audio.play().catch(() => { speakNative(text).then(resolve); });
+        audio.onended = () => { URL.revokeObjectURL(url); speakingRef.current = false; resolve(); };
+        audio.onerror = async () => { await speakNative(text); resolve(); };
+        speakingRef.current = true;
+        audio.play().catch(async () => { await speakNative(text); resolve(); });
       });
-    } catch {
-      await speakNative(text);
-    }
+    } catch { await speakNative(text); }
   }, [speakNative]);
 
-  /**
-   * Punto de entrada principal.
-   * Intenta ElevenLabs primero; si falla o no hay key, usa Web Speech.
-   */
+  // ── Punto de entrada principal ────────────────────────────────────────────
   const speak = useCallback(async (text: string, useElevenLabs = true) => {
     stop();
-    if (useElevenLabs) {
-      await speakElevenLabs(text);
-    } else {
-      await speakNative(text);
-    }
+    if (useElevenLabs) { await speakElevenLabs(text); }
+    else               { await speakNative(text); }
   }, [stop, speakElevenLabs, speakNative]);
 
-  // Frases predefinidas para cada momento del flujo
-  const phrases = {
-    onSimulated: (from: string, to: string, amount: string, double: boolean) =>
-      double
-        ? `Vas a convertir ${amount} ${from} a ${to}. Por seguridad, esta operación requiere confirmación adicional.`
-        : `Vas a convertir ${amount} ${from} a ${to}. ¿Quieres confirmar esta transacción?`,
-    onConfirming:  () => 'Procesando tu operación en la red de Solana...',
-    onSuccess:     () => 'Operación completada con éxito. Tu recibo quedó registrado en la blockchain.',
-    onError:       (msg: string) => `Hubo un problema: ${msg}. Por favor intenta de nuevo.`,
-    onListening:   () => 'Te escucho, di tu orden.',
-    onDoubleConf:  () => 'Ingresa tu PIN y presiona firmar para continuar.',
-    onBalanceAsk:  () => 'Consultando tu saldo en Solana Devnet.',
-  };
+  /**
+   * Habla el texto y cuando TERMINA activa el micrófono automáticamente.
+   * Esto resuelve el problema de que el bot y el usuario se pisan.
+   */
+  const speakThenListen = useCallback(async (text: string, startListening: () => void) => {
+    await speak(text, true);
+    // Pequeña pausa natural antes de escuchar (~300ms)
+    await new Promise((r) => setTimeout(r, 300));
+    startListening();
+  }, [speak]);
 
-  return { speak, stop, phrases };
+  return { speak, speakThenListen, stop, isSpeaking };
 }
+
+// ── Frases predefinidas del bot ───────────────────────────────────────────────
+export const BotPhrases = {
+  onListening:   ()                                            => 'Te escucho, di tu orden.',
+  onSimulated:   (from: string, to: string, amount: string, double: boolean) =>
+    double
+      ? `Vas a convertir ${amount} ${from} a ${to}. Por seguridad necesito que confirmes con tu PIN.`
+      : `Vas a convertir ${amount} ${from} a ${to}. ¿Confirmas la operación?`,
+  onConfirming:  ()                                            => 'Procesando tu operación en Solana.',
+  onSuccess:     ()                                            => 'Listo. Tu operación fue enviada a Devnet con éxito.',
+  onError:       (msg: string)                                 => `Hubo un problema: ${msg}. Intenta de nuevo.`,
+  onDoubleConf:  ()                                            => 'Ingresa tu PIN y presiona firmar para continuar.',
+  onBalance:     ()                                            => 'Consultando tu saldo en Solana.',
+};

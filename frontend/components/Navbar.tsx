@@ -48,6 +48,9 @@ export function Navbar() {
         {/* Separador */}
         <div style={{ width: 1, height: 28, background: 'var(--border)', margin: '0 4px' }} />
 
+        {/* Logo Sucha-Tech */}
+        <img src="/sucha-logo.jpg" alt="ST" style={{ width: 28, height: 28, borderRadius: 7, objectFit: 'cover', border: '1px solid rgba(124,58,237,0.4)', boxShadow: '0 0 8px rgba(124,58,237,0.3)' }} />
+
         {/* Theme toggle */}
         <ThemeToggle size="sm" />
       </div>

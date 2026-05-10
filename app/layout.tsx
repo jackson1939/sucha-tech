@@ -3,11 +3,14 @@ import { ThemeProvider } from '@frontend/components/ThemeProvider';
 import '@frontend/styles/globals.css';
 
 export const metadata: Metadata = {
-  title: 'Vibe Broker — Web3 por voz',
-  description: 'El "Alexa" de las transacciones Web3. Swaps y bridges en Solana con confirmación por voz.',
-  keywords: ['solana', 'web3', 'defi', 'voice', 'swap', 'voz'],
+  title: 'Vibe Broker — Sucha-Tech DeFi AI',
+  description: 'El "Alexa" de las transacciones Web3. Swaps y bridges multi-chain con confirmación por voz.',
+  keywords: ['solana', 'web3', 'defi', 'voice', 'swap', 'voz', 'sucha-tech'],
   icons: {
-    icon: '/favicon.svg',
+    icon:             '/sucha-logo.jpg',
+    shortcut:         '/sucha-logo.jpg',
+    apple:            '/sucha-logo.jpg',
+    other: [{ rel: 'icon', url: '/sucha-logo.jpg' }],
   },
 };
 

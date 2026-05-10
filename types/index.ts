@@ -4,6 +4,7 @@ export interface ParsedIntent {
   tokenFrom?: string;
   tokenTo?: string;
   amount?: number;
+  chain?: string;
   rawText: string;
   confidence: number;
 }
@@ -52,6 +53,8 @@ export interface SimulateResponse {
   asrConfidence: number;
   route: { provider: string; routeId: string };
   latencyMs: number;
+  prices?: Record<string, number>;
+  isBalanceQuery?: boolean;
 }
 
 // ─── API: execute ─────────────────────────────────────────────────────────────

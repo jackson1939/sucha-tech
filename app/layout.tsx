@@ -1,30 +1,43 @@
 import type { Metadata, Viewport } from 'next';
-import { Navbar } from '@frontend/components/Navbar';
+import { ThemeProvider } from '@frontend/components/ThemeProvider';
 import '@frontend/styles/globals.css';
 
 export const metadata: Metadata = {
-  title: 'Vibe Broker — Web3 por voz',
-  description: 'El "Alexa" de las transacciones Web3. Swaps y bridges en Solana con confirmación por voz.',
-  keywords: ['solana', 'web3', 'defi', 'voice', 'swap', 'voz'],
-  icons: { icon: 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎙️</text></svg>' },
+  title: 'Vibe Broker — Sucha-Tech DeFi AI',
+  description: 'El "Alexa" de las transacciones Web3. Swaps y bridges multi-chain con confirmación por voz.',
+  keywords: ['solana', 'web3', 'defi', 'voice', 'swap', 'voz', 'sucha-tech'],
+  icons: {
+    icon:             '/sucha-logo.jpg',
+    shortcut:         '/sucha-logo.jpg',
+    apple:            '/sucha-logo.jpg',
+    other: [{ rel: 'icon', url: '/sucha-logo.jpg' }],
+  },
 };
 
 export const viewport: Viewport = {
-  width:          'device-width',
-  initialScale:   1,
-  themeColor:     '#05050f',
-  viewportFit:    'cover',
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)',  color: '#05050f' },
+    { media: '(prefers-color-scheme: light)', color: '#f0f2ff' },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
-      {/* noise class añade textura sutil vía CSS */}
-      <body className="noise" style={{ background: '#05050f', minHeight: '100vh' }}>
-        <div style={{ maxWidth: 480, margin: '0 auto', paddingBottom: 96 }}>
+    <html lang="es" data-theme="dark" suppressHydrationWarning>
+      <head>
+        {/* Anti-flash: aplica el tema guardado ANTES de que React hidrate */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('vb_theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
+          }}
+        />
+      </head>
+      <body className="noise" style={{ background: 'var(--bg-base)', minHeight: '100vh' }}>
+        <ThemeProvider>
           {children}
-        </div>
-        <Navbar />
+        </ThemeProvider>
       </body>
     </html>
   );

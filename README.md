@@ -45,7 +45,7 @@ npm run dev                   # → http://localhost:3000
 ```bash
 SOLANA_RPC_URL=https://api.devnet.solana.com
 SOLANA_NETWORK=devnet
-RECEIPT_PROGRAM_ID=YourAnchorProgramIdHere
+RECEIPT_PROGRAM_ID=DLUY5F8d4TtRxWXgJQMXH7hhaDTDbnqtkZsVbWDtMsYx
 NEXT_PUBLIC_SOLANA_NETWORK=devnet
 
 LIFI_API_KEY=YOUR_LIFI_KEY           # sin clave: usa mock automático

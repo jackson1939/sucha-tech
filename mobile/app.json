@@ -1,0 +1,67 @@
+{
+  "expo": {
+    "name": "Vibe Broker",
+    "slug": "vibe-broker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#05050f"
+    },
+    "scheme": "vibebroker",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.vibebroker.app",
+      "infoPlist": {
+        "NSSpeechRecognitionUsageDescription": "Vibe Broker necesita acceso al micrófono para comandos de voz",
+        "NSMicrophoneUsageDescription": "Vibe Broker usa el micrófono para reconocer tus comandos DeFi"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#05050f"
+      },
+      "package": "com.vibebroker.app",
+      "permissions": [
+        "RECORD_AUDIO",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "@react-native-voice/voice",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Vibe Broker usa el micrófono para comandos de voz"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "7fbc4c95-e22e-4b38-9a8a-992e941fe195"
+      },
+      "router": {
+        "origin": false
+      },
+      "apiBaseUrl": "https://sucha-tech.vercel.app",
+      "solanaRpcUrl": "https://api.devnet.solana.com",
+      "solanaNetwork": "devnet",
+      "receiptProgramId": "DLUY5F8d4TtRxWXgJQMXH7hhaDTDbnqtkZsVbWDtMsYx"
+    },
+    "owner": "kenyi001"
+  }
+}

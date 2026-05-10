@@ -380,7 +380,11 @@ export default function LandingPage() {
           <ParticleCanvas count={20} interactive={false} connectDist={80} />
 
           <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ fontSize: 52, marginBottom: 20, filter: 'drop-shadow(0 0 20px var(--accent-glow))' }}>🎙️</div>
+            <img src="/sucha-logo.jpg" alt="Sucha-Tech" style={{
+              width: 80, height: 80, borderRadius: 20, objectFit: 'cover',
+              marginBottom: 20, boxShadow: '0 0 40px rgba(124,58,237,0.5)',
+              border: '2px solid rgba(124,58,237,0.4)',
+            }} />
             <h2 style={{ ...h2Style, marginBottom: 16 }}>¿Listo para operar con tu voz?</h2>
             <p style={{ fontSize: 16, color: 'var(--text-2)', marginBottom: 36, lineHeight: 1.7 }}>
               Únete al futuro de las finanzas descentralizadas. Sin curva de aprendizaje.
@@ -419,19 +423,31 @@ function PublicNav() {
   return (
     <nav style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-      background: 'var(--bg-base)', opacity: 0.95,
-      backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border)',
+      background: 'rgba(5,5,15,0.88)',
+      backdropFilter: 'blur(24px)',
+      WebkitBackdropFilter: 'blur(24px)',
+      borderBottom: '1px solid rgba(124,58,237,0.2)',
     }}>
       <div style={{
-        maxWidth: 1100, margin: '0 auto', padding: '14px 24px',
+        maxWidth: 1100, margin: '0 auto', padding: '10px 24px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
+        {/* Logo Sucha-Tech */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 22, filter: 'drop-shadow(0 0 10px var(--accent-glow))' }}>🎙️</span>
-          <span style={{
-            fontSize: 18, fontWeight: 800, letterSpacing: '-0.02em',
-            background: 'var(--grad-text)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          }}>Vibe Broker</span>
+          <img src="/sucha-logo.jpg" alt="Sucha-Tech" style={{
+            width: 38, height: 38, borderRadius: 10,
+            objectFit: 'cover',
+            boxShadow: '0 0 14px rgba(124,58,237,0.5)',
+            border: '1px solid rgba(124,58,237,0.4)',
+          }} />
+          <div>
+            <p style={{
+              fontSize: 15, fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1.1,
+              background: 'linear-gradient(135deg,#60a5fa,#a78bfa)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            }}>SUCHA-TECH</p>
+            <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.12em', fontWeight: 700, textTransform: 'uppercase' }}>DeFi AI Project</p>
+          </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <ThemeToggle size="sm" />
@@ -592,16 +608,40 @@ function LandingBg() {
   const isDark = theme === 'dark';
   return (
     <div aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+
+      {/* ── Banner Sucha-Tech como fondo base ──────────────────────────── */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        backgroundImage: 'url(/sucha-banner.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center center',
+        backgroundRepeat: 'no-repeat',
+        opacity: isDark ? 0.28 : 0.15,
+        transition: 'opacity 400ms ease',
+      }} />
+
+      {/* ── Overlay oscuro para mantener legibilidad ───────────────────── */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: isDark
+          ? 'linear-gradient(180deg, rgba(5,5,15,0.72) 0%, rgba(5,5,15,0.45) 40%, rgba(5,5,15,0.72) 100%)'
+          : 'linear-gradient(180deg, rgba(240,242,255,0.82) 0%, rgba(240,242,255,0.65) 40%, rgba(240,242,255,0.82) 100%)',
+        transition: 'background 400ms ease',
+      }} />
+
+      {/* ── Radiales de acento sobre el banner ─────────────────────────── */}
       <div style={{
         position: 'absolute', inset: 0,
         background: isDark
           ? 'radial-gradient(ellipse 90% 60% at 50% -10%, rgba(124,58,237,0.22) 0%, transparent 55%), radial-gradient(ellipse 60% 45% at 90% 90%, rgba(37,99,235,0.16) 0%, transparent 50%)'
-          : 'radial-gradient(ellipse 100% 65% at 50% -5%, rgba(109,40,217,0.18) 0%, transparent 52%), radial-gradient(ellipse 70% 50% at 90% 95%, rgba(29,78,216,0.14) 0%, transparent 50%), radial-gradient(ellipse 50% 40% at 10% 80%, rgba(124,58,237,0.10) 0%, transparent 50%)',
+          : 'radial-gradient(ellipse 100% 65% at 50% -5%, rgba(109,40,217,0.14) 0%, transparent 52%), radial-gradient(ellipse 70% 50% at 90% 95%, rgba(29,78,216,0.10) 0%, transparent 50%)',
         transition: 'background 400ms ease',
       }} />
+
+      {/* ── Grid sutil ─────────────────────────────────────────────────── */}
       <div style={{
         position: 'absolute', inset: 0,
-        backgroundImage: `linear-gradient(${isDark?'rgba(255,255,255,0.016)':'rgba(109,40,217,0.055)'} 1px, transparent 1px), linear-gradient(90deg, ${isDark?'rgba(255,255,255,0.016)':'rgba(109,40,217,0.055)'} 1px, transparent 1px)`,
+        backgroundImage: `linear-gradient(${isDark ? 'rgba(255,255,255,0.02)' : 'rgba(109,40,217,0.04)'} 1px, transparent 1px), linear-gradient(90deg, ${isDark ? 'rgba(255,255,255,0.02)' : 'rgba(109,40,217,0.04)'} 1px, transparent 1px)`,
         backgroundSize: '80px 80px',
       }} />
     </div>

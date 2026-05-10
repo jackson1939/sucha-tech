@@ -29,6 +29,23 @@ export function AnimatedBackground() {
   return (
     <div ref={containerRef} aria-hidden="true" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
 
+      {/* Banner Sucha-Tech — fondo sutil en el dashboard */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        backgroundImage: 'url(/sucha-banner.jpg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center center',
+        opacity: isDark ? 0.12 : 0.06,
+        transition: 'opacity 400ms ease',
+      }} />
+
+      {/* Overlay de oscuridad */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: isDark ? 'rgba(5,5,15,0.78)' : 'rgba(240,242,255,0.88)',
+        transition: 'background 400ms ease',
+      }} />
+
       {/* Gradiente base */}
       <div style={{
         position: 'absolute', inset: 0,

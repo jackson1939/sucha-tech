@@ -51,14 +51,26 @@ export function TopBar() {
         padding: '10px 16px', gap: 8,
       }}>
 
-        {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
-          <span style={{ fontSize: 18, filter: 'drop-shadow(0 0 8px #7c3aed)' }}>🎙️</span>
-          <span style={{
-            fontSize: 14, fontWeight: 900, letterSpacing: '-0.03em',
-            background: 'linear-gradient(135deg,#a78bfa,#60a5fa)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          }}>VB</span>
+        {/* Logo Sucha-Tech */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <img
+            src="/sucha-logo.jpg"
+            alt="Sucha-Tech"
+            style={{
+              width: 32, height: 32, borderRadius: 8,
+              objectFit: 'cover',
+              boxShadow: '0 0 10px rgba(124,58,237,0.6)',
+              border: '1px solid rgba(124,58,237,0.5)',
+            }}
+          />
+          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
+            <span style={{
+              fontSize: 11, fontWeight: 900, letterSpacing: '0.04em',
+              background: 'linear-gradient(135deg,#60a5fa,#a78bfa)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+            }}>SUCHA-TECH</span>
+            <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>DeFi AI</span>
+          </div>
         </div>
 
         {/* Price ticker */}

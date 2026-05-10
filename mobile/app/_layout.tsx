@@ -1,7 +1,13 @@
+import 'react-native-get-random-values';
 import { Stack }          from 'expo-router';
 import { StatusBar }      from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider }       from 'react-native-safe-area-context';
+import { Buffer } from '@craftzdog/react-native-buffer';
+
+if (!(global as { Buffer?: typeof Buffer }).Buffer) {
+  (global as { Buffer: typeof Buffer }).Buffer = Buffer;
+}
 
 export default function RootLayout() {
   return (

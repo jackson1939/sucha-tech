@@ -56,7 +56,11 @@
       },
       "router": {
         "origin": false
-      }
+      },
+      "apiBaseUrl": "https://sucha-tech.vercel.app",
+      "solanaRpcUrl": "https://api.devnet.solana.com",
+      "solanaNetwork": "devnet",
+      "receiptProgramId": "DLUY5F8d4TtRxWXgJQMXH7hhaDTDbnqtkZsVbWDtMsYx"
     },
     "owner": "kenyi001"
   }

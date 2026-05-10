@@ -64,59 +64,108 @@ export default function DashboardPage() {
     };
   }, []);
 
+  // ── Refs para evitar closures desactualizados ─────────────────────────────
+  const autoModeRef    = useRef(autoMode);
+  const simulationRef  = useRef(simulation);
+  const showConfirmRef = useRef(showConfirm);
+  useEffect(() => { autoModeRef.current    = autoMode;    }, [autoMode]);
+  useEffect(() => { simulationRef.current  = simulation;  }, [simulation]);
+  useEffect(() => { showConfirmRef.current = showConfirm; }, [showConfirm]);
+
+  // ── Ejecutar en modo autónomo — siempre sin modal ─────────────────────────
+  const autoExecute = useCallback(async (sim: SimulateResponse) => {
+    // En modo autónomo el bot anuncia y ejecuta directamente.
+    // Pasa type:'double' cuando la política lo requiere para que el
+    // backend lo acepte; el PIN es opcional en devnet (demo signature).
+    const phrase = BotPhrases.onSimulated(sim.quote.from, sim.quote.to, sim.quote.amount, false);
+    speak(phrase, false);
+    const res = await execute(sim, undefined);   // useExecute ya fija type correcto
+    if (res) {
+      setTxResult(res);
+      speak(BotPhrases.onSuccess());
+    } else {
+      speak(BotPhrases.onError(execError ?? 'intenta de nuevo'));
+    }
+  }, [speak, execute, execError]);
+
   // ── Simular ───────────────────────────────────────────────────────────────
   const handleSimulate = useCallback(async (text: string, confidence = 1.0) => {
     if (!text.trim() || loading) return;
-    stop(); setTranscript(''); setInterimText(''); resetExec(); setTxResult(null);
+    stop();
+    setTranscript('');
+    setInterimText('');
+    setShowConfirm(false);   // cierra cualquier modal previo
+    resetExec();
+    setTxResult(null);
 
     const sim = await simulate(text.trim(), confidence);
     if (!sim) return;
 
-    if (autoMode && !sim.requiresDoubleConfirmation) {
-      speak(BotPhrases.onSimulated(sim.quote.from, sim.quote.to, sim.quote.amount, false), false);
-      const res = await execute(sim as SimulateResponse, undefined);
-      if (res) { setTxResult(res); speak(BotPhrases.onSuccess()); }
-      else      { speak(BotPhrases.onError(execError ?? 'intenta de nuevo')); }
+    // Modo autónomo: ejecuta siempre sin modal, sin importar el nivel de confirmación
+    if (autoModeRef.current) {
+      await autoExecute(sim as SimulateResponse);
       return;
     }
 
+    // Modo normal
     setShowConfirm(true);
-    const phrase = BotPhrases.onSimulated(sim.quote.from, sim.quote.to, sim.quote.amount, sim.requiresDoubleConfirmation);
+    const phrase = BotPhrases.onSimulated(
+      sim.quote.from, sim.quote.to, sim.quote.amount, sim.requiresDoubleConfirmation,
+    );
     if (!sim.requiresDoubleConfirmation) {
       await speakThenListen(phrase, () => voiceBtnRef.current?.startListening());
     } else {
       await speak(phrase);
     }
-  }, [loading, stop, resetExec, simulate, autoMode, speak, speakThenListen, execute, execError]);
+  }, [loading, stop, resetExec, simulate, autoExecute, speak, speakThenListen]);
 
   const handleVoiceStart   = useCallback(() => { stop(); setInterimText(''); }, [stop]);
   const handleVoiceInterim = useCallback((t: string) => setInterimText(t), []);
 
+  // Usa refs para no recrear el callback en cada render y evitar closures viejos
+  const handleConfirmRef  = useRef<(pin?: string) => Promise<void>>(async () => {});
+  const handleSimulateRef = useRef(handleSimulate);
+  useEffect(() => { handleSimulateRef.current = handleSimulate; }, [handleSimulate]);
+
   const handleVoiceResult = useCallback((t: string, c: number) => {
     if (!t.trim()) return;
-    setTranscript(t); setInterimText('');
-    if (simulation && showConfirm && !simulation.requiresDoubleConfirmation) {
+    setTranscript(t);
+    setInterimText('');
+
+    // Si hay simulación pendiente Y modal abierto Y el usuario confirma con voz
+    const sim = simulationRef.current;
+    const showC = showConfirmRef.current;
+    if (sim && showC && !sim.requiresDoubleConfirmation) {
       const n = t.toLowerCase();
-      if (n.includes('confirm') || n.includes('sí') || n.includes('si') || n.includes('yes') || n.includes('dale')) {
-        handleConfirm(undefined); return;
+      if (n.includes('confirm') || n.includes('sí') || n.includes('si') ||
+          n.includes('yes')     || n.includes('dale') || n.includes('ok')) {
+        handleConfirmRef.current(undefined);
+        return;
       }
     }
-    handleSimulate(t, c);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [simulation, showConfirm]);
+    handleSimulateRef.current(t, c);
+  }, []); // sin deps — usa siempre los refs actualizados
 
   const handleConfirm = useCallback(async (pin?: string) => {
-    if (!simulation) return;
+    const sim = simulationRef.current;
+    if (!sim) return;
     stop();
     speak(BotPhrases.onConfirming(), false);
-    const res = await execute(simulation as SimulateResponse, pin);
+    const res = await execute(sim as SimulateResponse, pin);
     if (res) {
-      setTxResult(res); setShowConfirm(false); resetSim(); setInputText(''); setTranscript('');
+      setTxResult(res);
+      setShowConfirm(false);
+      resetSim();
+      setInputText('');
+      setTranscript('');
       await speak(BotPhrases.onSuccess());
     } else {
       await speak(BotPhrases.onError(execError ?? 'intenta de nuevo'));
     }
-  }, [simulation, stop, speak, execute, resetSim, execError]);
+  }, [stop, speak, execute, resetSim, execError]);
+
+  // Mantiene el ref de handleConfirm siempre actualizado
+  useEffect(() => { handleConfirmRef.current = handleConfirm; }, [handleConfirm]);
 
   const handleDismiss = useCallback(() => {
     setTxResult(null); resetSim(); resetExec();
@@ -238,12 +287,15 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <ConfirmationModal open={showConfirm}
-        requiresDouble={simulation?.requiresDoubleConfirmation ?? false}
-        onConfirm={handleConfirm}
-        onCancel={() => { setShowConfirm(false); stop(); }}
-        loading={executing}
-      />
+      {/* Modal solo en modo manual — en auto mode nunca se muestra */}
+      {!autoMode && (
+        <ConfirmationModal open={showConfirm}
+          requiresDouble={simulation?.requiresDoubleConfirmation ?? false}
+          onConfirm={handleConfirm}
+          onCancel={() => { setShowConfirm(false); stop(); }}
+          loading={executing}
+        />
+      )}
     </PageTransition>
   );
 }

@@ -7,6 +7,7 @@ import Constants from 'expo-constants';
 
 export const API_BASE =
   (Constants.expoConfig?.extra?.apiBaseUrl as string) ??
+  process.env.EXPO_PUBLIC_API_BASE_URL ??
   process.env.API_BASE_URL ??
   'http://10.0.2.2:3000';   // Android emulator → host machine
 

@@ -141,15 +141,35 @@ export function useSpeech(voiceConfig?: VoiceConfig): SpeechHandle {
 }
 
 // ── Frases predefinidas del bot ───────────────────────────────────────────────
+const SIMULATED_PHRASES_SINGLE = [
+  (from: string, to: string, amount: string) => `Vas a convertir ${amount} ${from} a ${to}. ¿Confirmas la operación?`,
+  (from: string, to: string, amount: string) => `Simulación lista: ${amount} ${from} por ${to}. Dime si confirmas.`,
+  (from: string, to: string, amount: string) => `Entendido. ${amount} ${from} a ${to}. ¿Lo hacemos?`,
+];
+
 export const BotPhrases = {
   onListening:   ()                                            => 'Te escucho, di tu orden.',
-  onSimulated:   (from: string, to: string, amount: string, double: boolean) =>
-    double
-      ? `Vas a convertir ${amount} ${from} a ${to}. Por seguridad necesito que confirmes con tu PIN.`
-      : `Vas a convertir ${amount} ${from} a ${to}. ¿Confirmas la operación?`,
+  onSimulated:   (from: string, to: string, amount: string, double: boolean) => {
+    if (double) {
+      return `Vas a convertir ${amount} ${from} a ${to}. Por seguridad necesito que confirmes con tu PIN.`;
+    }
+    const idx = Math.floor(Math.random() * SIMULATED_PHRASES_SINGLE.length);
+    return SIMULATED_PHRASES_SINGLE[idx](from, to, amount);
+  },
   onConfirming:  ()                                            => 'Procesando tu operación en Solana.',
-  onSuccess:     ()                                            => 'Listo. Tu operación fue enviada a Devnet con éxito.',
+  onSuccess:     ()                                            => {
+    const phrases = [
+      'Listo. Tu operación fue enviada a Devnet con éxito.',
+      'Perfecto. Transacción enviada correctamente.',
+      'Hecho. Tu swap está en camino en Devnet.',
+    ];
+    return phrases[Math.floor(Math.random() * phrases.length)];
+  },
   onError:       (msg: string)                                 => `Hubo un problema: ${msg}. Intenta de nuevo.`,
   onDoubleConf:  ()                                            => 'Ingresa tu PIN y presiona firmar para continuar.',
   onBalance:     ()                                            => 'Consultando tu saldo en Solana.',
+  onBalanceQuery: (token: string, price: number)               =>
+    price > 0
+      ? `El precio actual de ${token} es ${price.toLocaleString('es', { style: 'currency', currency: 'USD' })}.`
+      : `No encontré el precio de ${token} en este momento.`,
 };

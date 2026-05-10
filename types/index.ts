@@ -54,6 +54,7 @@ export interface SimulateResponse {
   route: { provider: string; routeId: string };
   latencyMs: number;
   prices?: Record<string, number>;
+  isBalanceQuery?: boolean;
 }
 
 // ─── API: execute ─────────────────────────────────────────────────────────────

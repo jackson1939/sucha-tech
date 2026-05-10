@@ -18,8 +18,10 @@ export async function POST(req: NextRequest) {
     if (!sim)
       return NextResponse.json({ error: true, code: 'SIM_NOT_FOUND', message: 'Simulación no encontrada o expirada' }, { status: 404 });
 
+    // En devnet: aceptamos type:'double' sin PIN (modo autónomo / demo).
+    // En producción aquí iría la verificación de passkey o PIN real.
     if (sim.requiresDoubleConfirmation && confirmation.type !== 'double')
-      return NextResponse.json({ error: true, code: 'DOUBLE_CONFIRM_REQUIRED', message: 'Esta operación requiere confirmación doble' }, { status: 403 });
+      return NextResponse.json({ error: true, code: 'DOUBLE_CONFIRM_REQUIRED', message: 'Esta operación requiere confirmación doble (di "confirmar" o usa PIN)' }, { status: 403 });
 
     let txHash = `devnet-sim-${uuidv4()}`;
     try { txHash = await broadcastTransaction(confirmation.signature); } catch { /* fallback */ }

@@ -5,7 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider }       from 'react-native-safe-area-context';
 import { Buffer } from '@craftzdog/react-native-buffer';
 
-if (!(global as { Buffer?: typeof Buffer }).Buffer) {
+if (typeof (global as { Buffer?: typeof Buffer }).Buffer === 'undefined') {
   (global as { Buffer: typeof Buffer }).Buffer = Buffer;
 }
 

@@ -4,8 +4,11 @@ import '@frontend/styles/globals.css';
 
 export const metadata: Metadata = {
   title: 'Vibe Broker — Web3 por voz',
-  description: 'El "Alexa" de las transacciones Web3 en Solana.',
-  icons: { icon: '/favicon.svg' },
+  description: 'El "Alexa" de las transacciones Web3. Swaps y bridges en Solana con confirmación por voz.',
+  keywords: ['solana', 'web3', 'defi', 'voice', 'swap', 'voz'],
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export const viewport: Viewport = {
@@ -24,14 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Anti-flash: aplica el tema guardado ANTES de que React hidrate */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `
-              (function(){
-                try{
-                  var t=localStorage.getItem('vb_theme')||'dark';
-                  document.documentElement.setAttribute('data-theme',t);
-                }catch(e){}
-              })();
-            `,
+            __html: `(function(){try{var t=localStorage.getItem('vb_theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
           }}
         />
       </head>

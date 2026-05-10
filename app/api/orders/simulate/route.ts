@@ -4,6 +4,7 @@ import { parseIntent }           from '@backend/services/intentParser';
 import { evaluatePolicy }        from '@backend/services/policyEvaluator';
 import { getQuote }              from '@backend/services/lifi';
 import { setSimulation }         from '@backend/services/simulationCache';
+import { getPrices }             from '@backend/services/oracle';
 import { queryOne }              from '@backend/db';
 import type { SimulateRequest, UserRow, UserPolicy } from '@/types';
 
@@ -46,7 +47,10 @@ export async function POST(req: NextRequest) {
     }
 
     const policy       = evaluatePolicy(amount, asrConfidence, userPolicy);
-    const quote        = await getQuote(fromToken, toToken, String(amount));
+    const [quote, prices] = await Promise.all([
+      getQuote(fromToken, toToken, String(amount)),
+      getPrices([fromToken, toToken]).catch(() => ({})),
+    ]);
     const simulationId = `sim-${uuidv4()}`;
 
     setSimulation(simulationId, { intent, quote, requiresDoubleConfirmation: policy.requiresDoubleConfirmation, userId });
@@ -61,6 +65,7 @@ export async function POST(req: NextRequest) {
       asrConfidence,
       route: { provider: quote.provider, routeId: quote.routeId },
       latencyMs: Date.now() - startMs,
+      prices,
     });
   } catch (e) {
     console.error('[api/simulate]', e);

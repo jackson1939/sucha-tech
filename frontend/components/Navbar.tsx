@@ -19,8 +19,8 @@ export function Navbar() {
   useEffect(() => {
     const el = navRef.current;
     if (!el) return;
-    const t = gsap.from(el, { y: 20, opacity: 0, duration: 0.55, delay: 0.3, ease: 'power2.out' });
-    return () => { t.kill(); };
+    const t = gsap.fromTo(el, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.55, delay: 0.3, ease: 'power2.out', clearProps: 'transform,opacity' });
+    return () => { gsap.set(el, { clearProps: 'all' }); t.kill(); };
   }, []);
 
   return (

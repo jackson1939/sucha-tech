@@ -7,6 +7,8 @@ import { PageTransition }     from '@frontend/components/PageTransition';
 import { VoiceSettings }      from '@frontend/components/VoiceSettings';
 import { useVoiceSettings }   from '@frontend/hooks/useVoiceSettings';
 import { useSpeech }          from '@frontend/hooks/useSpeech';
+import { useWallet }          from '@frontend/hooks/useWallet';
+import { WalletBar }          from '@frontend/components/WalletBar';
 import type { UserSettings }   from '@/types';
 
 const USER_ID = 'demo';
@@ -20,30 +22,29 @@ export default function SettingsPage() {
   const [maxPerOp,  setMaxPerOp]  = useState('');
   const [dailyCap,  setDailyCap]  = useState('');
   const [voiceOnly, setVoiceOnly] = useState(true);
-  const [tab,       setTab]       = useState<'policy' | 'voice'>('policy');
+  const [tab,       setTab]       = useState<'policy' | 'voice' | 'wallet'>('policy');
 
   const { config }     = useVoiceSettings();
   const { speak }      = useSpeech(config);
+  const wallet         = useWallet();
   const pageRef        = useRef<HTMLDivElement>(null);
   const tabContentRef  = useRef<HTMLDivElement>(null);
 
-  // Animación inicial de la página
+  // Animación inicial — fromTo evita bug Strict Mode
   useEffect(() => {
     if (loading || !pageRef.current) return;
     const blocks = Array.from(pageRef.current.querySelectorAll<HTMLElement>('.settings-block'));
     if (!blocks.length) return;
-    const t = gsap.from(blocks, { y: 20, opacity: 0, stagger: 0.1, duration: 0.5, ease: 'power2.out' });
-    return () => { t.kill(); };
+    const t = gsap.fromTo(blocks, { y: 20, opacity: 0 }, { y: 0, opacity: 1, stagger: 0.08, duration: 0.5, ease: 'power2.out', clearProps: 'transform,opacity' });
+    return () => { gsap.set(blocks, { clearProps: 'all' }); t.kill(); };
   }, [loading]);
 
-  // Animación al cambiar de tab
+  // Animación al cambiar de tab — clearProps evita estado bloqueado
   useEffect(() => {
     if (!tabContentRef.current) return;
-    const t = gsap.fromTo(tabContentRef.current,
-      { opacity: 0, y: 10 },
-      { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out' },
-    );
-    return () => { t.kill(); };
+    const el = tabContentRef.current;
+    const t = gsap.fromTo(el, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.32, ease: 'power2.out', clearProps: 'transform,opacity' });
+    return () => { gsap.set(el, { clearProps: 'all' }); t.kill(); };
   }, [tab]);
 
   useEffect(() => {
@@ -109,9 +110,8 @@ export default function SettingsPage() {
           background: 'var(--bg-secondary)', border: '1px solid var(--border)',
           borderRadius: 14, marginBottom: 20, position: 'relative',
         }}>
-          {(['policy', 'voice'] as const).map((t) => (
-            <TabBtn key={t} label={t === 'policy' ? '🛡️ Política' : '🎙️ Voz y TTS'}
-              active={tab === t} onClick={() => setTab(t)} />
+          {([['policy','🛡️ Política'],['voice','🎙️ Voz'],['wallet','🔌 Wallet']] as const).map(([t, l]) => (
+            <TabBtn key={t} label={l} active={tab === t} onClick={() => setTab(t)} />
           ))}
         </div>
 
@@ -175,6 +175,61 @@ export default function SettingsPage() {
                 Configuración de voz y TTS
               </p>
               <VoiceSettings />
+            </div>
+          )}
+
+          {tab === 'wallet' && (
+            <div className="settings-block">
+              {/* Estado actual */}
+              <div className="glass" style={{ borderRadius: 18, padding: 20, marginBottom: 12 }}>
+                <p style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Wallet conectada</p>
+                {wallet.connected ? (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                      <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--accent-soft)', border: '1px solid var(--border-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
+                        {wallet.walletName === 'Phantom' ? '👻' : wallet.walletName === 'Core' ? '🔷' : '🦊'}
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>{wallet.walletName}</p>
+                        <p style={{ fontSize: 12, color: 'var(--text-3)' }}>{wallet.chainName}</p>
+                      </div>
+                      <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, color: 'var(--success)', background: 'var(--success-soft)', border: '1px solid rgba(34,197,94,0.25)', padding: '4px 10px', borderRadius: 99 }}>
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 6px var(--success)', display: 'inline-block' }} />
+                        Activa
+                      </span>
+                    </div>
+                    <div style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--bg-secondary)', fontFamily: 'monospace', fontSize: 12, color: 'var(--text-2)', wordBreak: 'break-all', lineHeight: 1.5 }}>
+                      {wallet.address}
+                    </div>
+                    <button onClick={wallet.disconnect} style={{
+                      width: '100%', marginTop: 14, padding: '12px', borderRadius: 12,
+                      border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)',
+                      color: '#fca5a5', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    }}>
+                      🔌 Desconectar wallet
+                    </button>
+                  </>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                    <div style={{ fontSize: 40, marginBottom: 12 }}>🔌</div>
+                    <p style={{ fontSize: 14, color: 'var(--text-2)', marginBottom: 16 }}>No hay wallet conectada</p>
+                    <WalletBar />
+                  </div>
+                )}
+              </div>
+
+              {/* Redes soportadas */}
+              <div className="glass" style={{ borderRadius: 18, padding: 20 }}>
+                <p style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 14, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Redes soportadas</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {[['◎','Solana','#9945FF'],['Ξ','Ethereum','#627EEA'],['BNB','BNB Chain','#F3BA2F'],['◈','Polygon','#8247E5'],['A','Avalanche','#E84142'],['FTM','Fantom','#1969FF'],['ARB','Arbitrum','#12AAFF'],['OP','Optimism','#FF0420']].map(([sym, name, col]) => (
+                    <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 99, background: `${col}12`, border: `1px solid ${col}30`, fontSize: 12, fontWeight: 600, color: col }}>
+                      <span style={{ fontFamily: 'monospace', fontWeight: 800 }}>{sym}</span>
+                      <span style={{ color: 'var(--text-2)', fontWeight: 500 }}>{name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>

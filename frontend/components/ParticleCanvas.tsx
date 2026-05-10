@@ -84,7 +84,7 @@ export function ParticleCanvas({ count = 55, interactive = true, connectDist = 1
         const ey = p.y - q.y;
         const ed = Math.sqrt(ex * ex + ey * ey);
         if (ed < connectDist) {
-          const a = (1 - ed / connectDist) * (isDark ? 0.18 : 0.12);
+          const a = (1 - ed / connectDist) * (isDark ? 0.18 : 0.22);
           ctx.beginPath();
           ctx.moveTo(p.x, p.y);
           ctx.lineTo(q.x, q.y);
@@ -117,14 +117,18 @@ export function ParticleCanvas({ count = 55, interactive = true, connectDist = 1
       const isDark = theme === 'dark';
       const COLORS = isDark ? COLORS_DARK : COLORS_LIGHT;
 
+      // En light mode subimos la opacidad base para que las partículas sean
+      // visibles sobre el fondo claro sin perder elegancia
+      const minOp = isDark ? 0.18 : 0.32;
+      const rngOp = isDark ? 0.45 : 0.55;
       (canvas as HTMLCanvasElement & { _particles?: Particle[] })._particles = Array.from({ length: n }, () => ({
         x:           Math.random() * W,
         y:           Math.random() * H,
         vx:          (Math.random() - 0.5) * 0.45,
         vy:          (Math.random() - 0.5) * 0.45,
         size:        1 + Math.random() * 2,
-        opacity:     0.18 + Math.random() * 0.45,
-        baseOpacity: 0.18 + Math.random() * 0.45,
+        opacity:     minOp + Math.random() * rngOp,
+        baseOpacity: minOp + Math.random() * rngOp,
         colorIdx:    Math.floor(Math.random() * COLORS.length),
       }));
     }

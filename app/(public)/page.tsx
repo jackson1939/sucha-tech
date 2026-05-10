@@ -29,6 +29,13 @@ const STATS = [
   { value: '30',     label: 'Segundos máx. de ejecución' },
   { value: '0',      label: '% Fondos en custodia' },
 ];
+const PROBLEMS = [
+  { prob: 'No entiendo cómo funciona DeFi', sol: 'Solo di qué quieres hacer. El bot traduce a lenguaje blockchain.', icon: '😕' },
+  { prob: 'Las UIs de DeFi son aterradoras', sol: 'Cero botones confusos. Cero formularios. Solo tu voz.', icon: '😰' },
+  { prob: 'Miedo a perder fondos por error', sol: 'El bot narra cada paso antes de ejecutar. Tú siempre confirmas.', icon: '😨' },
+  { prob: 'No sé qué exchange o bridge usar', sol: 'LI.FI encuentra automáticamente la mejor ruta con menor fee.', icon: '🤔' },
+];
+
 const PARTNERS = [
   { name: 'Solana', sym: '◎' }, { name: 'LI.FI', sym: '⬡' },
   { name: 'ElevenLabs', sym: '🔊' }, { name: 'Anchor', sym: '⚓' },
@@ -38,6 +45,7 @@ const PARTNERS = [
 export default function LandingPage() {
   const heroRef  = useRef<HTMLElement>(null);
   const featRef  = useRef<HTMLElement>(null);
+  const probRef  = useRef<HTMLElement>(null);
   const stepsRef = useRef<HTMLElement>(null);
   const lineRef  = useRef<HTMLDivElement>(null);
   const partRef  = useRef<HTMLElement>(null);
@@ -46,32 +54,32 @@ export default function LandingPage() {
   useEffect(() => {
     const ctx = gsap.context(() => {
 
-      // ── 1. Hero — title character split ──────────────────────────────────
-      const titleEl = heroRef.current?.querySelector('.hero-title') as HTMLElement | null;
-      if (titleEl) {
-        const html = titleEl.innerHTML;
-        // Wrap each word in a clip mask
-        titleEl.innerHTML = html.replace(/<span[^>]*>(.*?)<\/span>/gs, (full) => full)
-          .replace(/\b(\w+)\b/g, '<span class="clip-wrap" style="display:inline-block;overflow:hidden;padding:0 2px"><span class="word-in" style="display:inline-block">$1</span></span>');
-
-        gsap.from(titleEl.querySelectorAll('.word-in'), {
-          y: '110%', opacity: 0,
-          stagger: 0.045, duration: 0.75,
+      // ── 1. Hero — animación directa sobre las dos líneas del título ──────
+      // NOTE: NO tocamos innerHTML — los spans tienen gradiente con
+      // -webkit-text-fill-color:transparent; corromper el HTML los vuelve
+      // invisibles en light mode. Animamos los spans directamente.
+      const titleSpans = heroRef.current?.querySelectorAll('.hero-title > span');
+      if (titleSpans?.length) {
+        gsap.from(titleSpans, {
+          y: 48, opacity: 0, rotateX: 12,
+          transformOrigin: 'top center',
+          stagger: 0.18, duration: 0.8,
           ease: 'power3.out', delay: 0.2,
+          clearProps: 'transform,opacity',
         });
       }
 
-      // ── 2. Subheadline — blur reveal ──────────────────────────────────────
+      // ── 2. Subheadline — fade + slide (sin blur: no hace clearProps limpio) ─
       gsap.fromTo('.hero-sub',
-        { opacity: 0, filter: 'blur(8px)', y: 12 },
-        { opacity: 1, filter: 'blur(0px)', y: 0, duration: 0.85, delay: 0.7, ease: 'power2.out' },
+        { opacity: 0, y: 16 },
+        { opacity: 1, y: 0, duration: 0.75, delay: 0.62, ease: 'power2.out', clearProps: 'transform,opacity' },
       );
 
       // ── 3. Pills + CTAs — stagger slide ───────────────────────────────────
-      gsap.from('.hero-pill',   { y: 18, opacity: 0, stagger: 0.08, duration: 0.5, delay: 0.95, ease: 'back.out(1.5)' });
-      gsap.from('.hero-cta',    { scale: 0.88, opacity: 0, stagger: 0.1, duration: 0.55, delay: 1.2, ease: 'back.out(1.7)' });
-      gsap.from('.hero-viz',    { y: 32, opacity: 0, duration: 0.9, delay: 1.35, ease: 'back.out(1.2)' });
-      gsap.from('.hero-badge',  { y: -20, opacity: 0, duration: 0.6, delay: 0.05, ease: 'power2.out' });
+      gsap.from('.hero-pill',   { y: 18, opacity: 0, stagger: 0.08, duration: 0.5,  delay: 0.95, ease: 'back.out(1.5)', clearProps: 'transform,opacity' });
+      gsap.from('.hero-cta',    { scale: 0.88, opacity: 0, stagger: 0.1, duration: 0.55, delay: 1.2,  ease: 'back.out(1.7)', clearProps: 'transform,opacity' });
+      gsap.from('.hero-viz',    { y: 32, opacity: 0, duration: 0.9, delay: 1.35, ease: 'back.out(1.2)', clearProps: 'transform,opacity' });
+      gsap.from('.hero-badge',  { y: -20, opacity: 0, duration: 0.6, delay: 0.05, ease: 'power2.out',  clearProps: 'transform,opacity' });
 
       // ── 4. Features — scroll reveal con hover 3D ──────────────────────────
       if (featRef.current) {
@@ -81,7 +89,15 @@ export default function LandingPage() {
         });
       }
 
-      // ── 5. Steps — línea se dibuja + pulsación ────────────────────────────
+      // ── 5. Problems — scroll reveal ───────────────────────────────────
+      if (probRef.current) {
+        gsap.from(probRef.current.querySelectorAll('.prob-card'), {
+          scrollTrigger: { trigger: probRef.current, start: 'top 78%' },
+          y: 36, opacity: 0, stagger: 0.1, duration: 0.6, ease: 'power2.out',
+        });
+      }
+
+      // ── 6. Steps — línea se dibuja + pulsación ────────────────────────────
       if (lineRef.current) {
         gsap.fromTo(lineRef.current,
           { scaleY: 0, transformOrigin: 'top center' },
@@ -246,6 +262,36 @@ export default function LandingPage() {
           gap: 20, marginTop: 48,
         }}>
           {FEATURES.map((f) => <FeatureCard key={f.title} {...f} />)}
+        </div>
+      </section>
+
+      {/* ── PROBLEM / SOLUTION ────────────────────────────────────────────── */}
+      <section ref={probRef} style={{
+        padding: '80px 24px', maxWidth: 1100, margin: '0 auto', position: 'relative', zIndex: 1,
+      }}>
+        <SectionLabel>¿Por qué Vibe Broker?</SectionLabel>
+        <h2 style={h2Style}>Resolvemos los mayores miedos de DeFi</h2>
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gap: 20, marginTop: 48,
+        }}>
+          {PROBLEMS.map((p) => (
+            <div key={p.prob} className="prob-card" style={{
+              padding: '24px 22px', borderRadius: 18,
+              background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+              display: 'flex', flexDirection: 'column', gap: 14,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <span style={{ fontSize: 28, flexShrink: 0 }}>{p.icon}</span>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)', lineHeight: 1.5 }}>{p.prob}</p>
+              </div>
+              <div style={{ height: 1, background: 'var(--border)' }} />
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                <span style={{ fontSize: 16, color: 'var(--success)', flexShrink: 0 }}>✓</span>
+                <p style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6 }}>{p.sol}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -550,12 +596,12 @@ function LandingBg() {
         position: 'absolute', inset: 0,
         background: isDark
           ? 'radial-gradient(ellipse 90% 60% at 50% -10%, rgba(124,58,237,0.22) 0%, transparent 55%), radial-gradient(ellipse 60% 45% at 90% 90%, rgba(37,99,235,0.16) 0%, transparent 50%)'
-          : 'radial-gradient(ellipse 90% 60% at 50% -10%, rgba(109,40,217,0.12) 0%, transparent 55%), radial-gradient(ellipse 60% 45% at 90% 90%, rgba(29,78,216,0.1) 0%, transparent 50%)',
+          : 'radial-gradient(ellipse 100% 65% at 50% -5%, rgba(109,40,217,0.18) 0%, transparent 52%), radial-gradient(ellipse 70% 50% at 90% 95%, rgba(29,78,216,0.14) 0%, transparent 50%), radial-gradient(ellipse 50% 40% at 10% 80%, rgba(124,58,237,0.10) 0%, transparent 50%)',
         transition: 'background 400ms ease',
       }} />
       <div style={{
         position: 'absolute', inset: 0,
-        backgroundImage: `linear-gradient(${isDark?'rgba(255,255,255,0.016)':'rgba(0,0,0,0.04)'} 1px, transparent 1px), linear-gradient(90deg, ${isDark?'rgba(255,255,255,0.016)':'rgba(0,0,0,0.04)'} 1px, transparent 1px)`,
+        backgroundImage: `linear-gradient(${isDark?'rgba(255,255,255,0.016)':'rgba(109,40,217,0.055)'} 1px, transparent 1px), linear-gradient(90deg, ${isDark?'rgba(255,255,255,0.016)':'rgba(109,40,217,0.055)'} 1px, transparent 1px)`,
         backgroundSize: '80px 80px',
       }} />
     </div>

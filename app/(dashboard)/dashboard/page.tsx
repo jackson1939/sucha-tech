@@ -14,6 +14,9 @@ import { useExecute }        from '@frontend/hooks/useExecute';
 import { useSpeech, BotPhrases } from '@frontend/hooks/useSpeech';
 import { useVoiceSettings }  from '@frontend/hooks/useVoiceSettings';
 import { useWallet }         from '@frontend/hooks/useWallet';
+import { useOrderHistory }   from '@frontend/hooks/useOrderHistory';
+import { usePortfolio }      from '@frontend/hooks/usePortfolio';
+import { PortfolioWidget }   from '@frontend/components/PortfolioWidget';
 import type { ExecuteResponse, SimulateResponse } from '@/types';
 
 const USER_ID = 'demo';
@@ -38,6 +41,9 @@ export default function DashboardPage() {
   const { config }                                                           = useVoiceSettings();
   const { speak, speakThenListen, stop }                                    = useSpeech(config);
   const { connected, walletName }                                            = useWallet();
+  const { addOrder }                                                         = useOrderHistory();
+  const { applyOrder }                                                       = usePortfolio();
+  const [prices, setPrices]                                                  = useState<Record<string, number>>({});
 
   const voiceBtnRef  = useRef<VoiceButtonHandle>(null);
   const headerRef    = useRef<HTMLDivElement>(null);
@@ -64,6 +70,11 @@ export default function DashboardPage() {
     };
   }, []);
 
+  // ── Fetch prices on mount ────────────────────────────────────────────────
+  useEffect(() => {
+    fetch('/api/prices').then(r => r.json()).then(d => setPrices(d.prices ?? {})).catch(() => {});
+  }, []);
+
   // ── Refs para evitar closures desactualizados ─────────────────────────────
   const autoModeRef    = useRef(autoMode);
   const simulationRef  = useRef(simulation);
@@ -81,12 +92,28 @@ export default function DashboardPage() {
     speak(phrase, false);
     const res = await execute(sim, undefined);   // useExecute ya fija type correcto
     if (res) {
+      const orderPayload = {
+        id: res.receiptId,
+        simulationId: sim.simulationId,
+        userId: USER_ID,
+        tokenFrom: sim.intent.tokenFrom ?? 'USDC',
+        tokenTo:   sim.intent.tokenTo   ?? 'SOL',
+        amount:    sim.intent.amount    ?? 0,
+        estimatedReceive: sim.quote.estimatedReceive,
+        txHash:    res.txHash,
+        receiptId: res.receiptId,
+        confirmationType: sim.requiresDoubleConfirmation ? 'double' : 'voice' as 'voice' | 'double',
+        status: 'submitted' as const,
+        createdAt: new Date().toISOString(),
+      };
+      addOrder(orderPayload);
+      applyOrder(orderPayload);
       setTxResult(res);
       speak(BotPhrases.onSuccess());
     } else {
       speak(BotPhrases.onError(execError ?? 'intenta de nuevo'));
     }
-  }, [speak, execute, execError]);
+  }, [speak, execute, execError, addOrder, applyOrder]);
 
   // ── Simular ───────────────────────────────────────────────────────────────
   const handleSimulate = useCallback(async (text: string, confidence = 1.0) => {
@@ -153,6 +180,22 @@ export default function DashboardPage() {
     speak(BotPhrases.onConfirming(), false);
     const res = await execute(sim as SimulateResponse, pin);
     if (res) {
+      const orderPayload = {
+        id: res.receiptId,
+        simulationId: sim.simulationId,
+        userId: USER_ID,
+        tokenFrom: sim.intent.tokenFrom ?? 'USDC',
+        tokenTo:   sim.intent.tokenTo   ?? 'SOL',
+        amount:    sim.intent.amount    ?? 0,
+        estimatedReceive: sim.quote.estimatedReceive,
+        txHash:    res.txHash,
+        receiptId: res.receiptId,
+        confirmationType: sim.requiresDoubleConfirmation ? 'double' : 'voice' as 'voice' | 'double',
+        status: 'submitted' as const,
+        createdAt: new Date().toISOString(),
+      };
+      addOrder(orderPayload);
+      applyOrder(orderPayload);
       setTxResult(res);
       setShowConfirm(false);
       resetSim();
@@ -162,7 +205,7 @@ export default function DashboardPage() {
     } else {
       await speak(BotPhrases.onError(execError ?? 'intenta de nuevo'));
     }
-  }, [stop, speak, execute, resetSim, execError]);
+  }, [stop, speak, execute, resetSim, execError, addOrder, applyOrder]);
 
   // Mantiene el ref de handleConfirm siempre actualizado
   useEffect(() => { handleConfirmRef.current = handleConfirm; }, [handleConfirm]);
@@ -266,6 +309,9 @@ export default function DashboardPage() {
         {error && <ErrorBanner message={error} />}
         {simulation && !txResult && <SimulationCard simulation={simulation} />}
         {txResult && <TransactionSuccess txHash={txResult.txHash} receiptId={txResult.receiptId} onDismiss={handleDismiss} />}
+
+        {/* ── Portfolio ────────────────────────────────────────────────── */}
+        {!simulation && !txResult && <PortfolioWidget prices={prices} />}
 
         {/* ── Ejemplos ─────────────────────────────────────────────────── */}
         {!simulation && !txResult && (

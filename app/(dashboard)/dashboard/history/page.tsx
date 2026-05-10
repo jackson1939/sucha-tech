@@ -1,15 +1,15 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { AnimatedBackground } from '@frontend/components/AnimatedBackground';
 import { PageTransition }     from '@frontend/components/PageTransition';
-import type { OrderRow }       from '@/types';
+import { useOrderHistory }    from '@frontend/hooks/useOrderHistory';
+import { usePortfolio }       from '@frontend/hooks/usePortfolio';
+import type { LocalOrder }    from '@frontend/hooks/useOrderHistory';
 
 gsap.registerPlugin(ScrollTrigger);
-
-const USER_ID = 'demo';
 
 const STATUS_MAP: Record<string, { label: string; color: string; bg: string; border: string }> = {
   submitted: { label: 'Enviado',    color: '#818cf8', bg: 'rgba(99,102,241,0.12)',  border: 'rgba(99,102,241,0.3)'  },
@@ -25,19 +25,10 @@ const CHAIN_COLOR: Record<string, string> = {
 };
 
 export default function HistoryPage() {
-  const [orders,  setOrders]  = useState<OrderRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState<string | null>(null);
+  const { orders, loaded, clearHistory, totalVolume, successCount } = useOrderHistory();
+  const { tokenList } = usePortfolio();
   const headerRef = useRef<HTMLDivElement>(null);
   const listRef   = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    fetch(`/api/orders?userId=${USER_ID}`)
-      .then(r => r.json())
-      .then(d => setOrders(d.orders ?? []))
-      .catch(() => setError('No se pudo cargar el historial'))
-      .finally(() => setLoading(false));
-  }, []);
 
   // Header entrance
   useEffect(() => {
@@ -49,7 +40,7 @@ export default function HistoryPage() {
 
   // Cards entrance when data loads
   useEffect(() => {
-    if (loading || !listRef.current) return;
+    if (!loaded || !listRef.current) return;
     const cards = Array.from(listRef.current.querySelectorAll<HTMLElement>('.order-card'));
     cards.forEach((card, i) => {
       gsap.fromTo(card,
@@ -62,7 +53,13 @@ export default function HistoryPage() {
       );
     });
     return () => { ScrollTrigger.getAll().forEach(t => t.kill()); };
-  }, [loading, orders]);
+  }, [loaded, orders]);
+
+  const handleClear = useCallback(() => {
+    if (confirm('¿Limpiar todo el historial de operaciones?')) {
+      clearHistory();
+    }
+  }, [clearHistory]);
 
   return (
     <PageTransition style={{ position: 'relative', zIndex: 1 }}>
@@ -86,12 +83,12 @@ export default function HistoryPage() {
           </div>
 
           {/* Stats strip */}
-          {!loading && orders.length > 0 && (
+          {loaded && (
             <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
               {[
-                { label: 'Total', val: orders.length },
-                { label: 'Confirmadas', val: orders.filter(o => o.status === 'confirmed').length },
-                { label: 'Pendientes',  val: orders.filter(o => o.status === 'pending' || o.status === 'submitted').length },
+                { label: 'Operaciones', val: successCount },
+                { label: 'Volumen',     val: totalVolume.toFixed(3) },
+                { label: 'Tokens',      val: tokenList.length },
               ].map(s => (
                 <div key={s.label} style={{
                   flex: 1, padding: '10px 12px', borderRadius: 12,
@@ -107,7 +104,7 @@ export default function HistoryPage() {
         </div>
 
         {/* ── Loading ─────────────────────────────────────────────────── */}
-        {loading && (
+        {!loaded && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 0', gap: 12 }}>
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" style={{ animation: 'spin 0.9s linear infinite' }}>
               <circle cx="12" cy="12" r="10" stroke="var(--border)" strokeWidth="3"/>
@@ -117,15 +114,8 @@ export default function HistoryPage() {
           </div>
         )}
 
-        {/* ── Error ───────────────────────────────────────────────────── */}
-        {error && (
-          <div style={{ padding: '12px 16px', borderRadius: 12, background: 'var(--danger-soft)', border: '1px solid rgba(239,68,68,0.25)', fontSize: 13, color: '#fca5a5', animation: 'fade-up 0.35s ease both' }}>
-            ⚠️ {error}
-          </div>
-        )}
-
         {/* ── Empty ───────────────────────────────────────────────────── */}
-        {!loading && !error && orders.length === 0 && <EmptyState />}
+        {loaded && orders.length === 0 && <EmptyState />}
 
         {/* ── List ────────────────────────────────────────────────────── */}
         <div ref={listRef} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -133,6 +123,23 @@ export default function HistoryPage() {
             <OrderCard key={o.id} order={o} idx={idx} />
           ))}
         </div>
+
+        {/* ── Clear button ─────────────────────────────────────────────── */}
+        {loaded && orders.length > 0 && (
+          <div style={{ marginTop: 20 }}>
+            <button onClick={handleClear} style={{
+              width: '100%', padding: '10px', border: '1px solid var(--border)',
+              borderRadius: 12, background: 'transparent', cursor: 'pointer',
+              color: 'var(--text-3)', fontSize: 12, fontWeight: 600,
+              transition: 'color 150ms, border-color 150ms',
+            }}
+            onMouseOver={e => { (e.currentTarget as HTMLElement).style.color = 'var(--danger)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--danger)'; }}
+            onMouseOut={e =>  { (e.currentTarget as HTMLElement).style.color = 'var(--text-3)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; }}
+            >
+              Limpiar historial
+            </button>
+          </div>
+        )}
 
         <p style={{ textAlign: 'center', fontSize: 10, color: 'var(--text-3)', marginTop: 32 }}>
           Prototipo educativo · No es asesoría financiera
@@ -162,12 +169,12 @@ function EmptyState() {
   );
 }
 
-function OrderCard({ order: o, idx }: { order: OrderRow; idx: number }) {
+function OrderCard({ order: o, idx }: { order: LocalOrder; idx: number }) {
   const ref  = useRef<HTMLDivElement>(null);
   const s    = STATUS_MAP[o.status] ?? STATUS_MAP.pending;
-  const date = new Date(o.created_at).toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' });
-  const colFrom = CHAIN_COLOR[o.token_from] ?? 'var(--accent)';
-  const colTo   = CHAIN_COLOR[o.token_to]   ?? 'var(--accent-2)';
+  const date = new Date(o.createdAt).toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' });
+  const colFrom = CHAIN_COLOR[o.tokenFrom] ?? 'var(--accent)';
+  const colTo   = CHAIN_COLOR[o.tokenTo]   ?? 'var(--accent-2)';
 
   return (
     <div ref={ref} className="order-card" style={{
@@ -191,12 +198,12 @@ function OrderCard({ order: o, idx }: { order: OrderRow; idx: number }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <TokenBadge sym={o.token_from} col={colFrom} />
+              <TokenBadge sym={o.tokenFrom} col={colFrom} />
               <span style={{ fontSize: 16, color: 'var(--text-3)' }}>→</span>
-              <TokenBadge sym={o.token_to} col={colTo} />
+              <TokenBadge sym={o.tokenTo} col={colTo} />
             </div>
             <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-1)' }}>
-              {o.token_from} → {o.token_to}
+              {o.tokenFrom} → {o.tokenTo}
             </span>
           </div>
           <span style={{ padding: '4px 10px', borderRadius: 99, fontSize: 11, fontWeight: 700, color: s.color, background: s.bg, border: `1px solid ${s.border}` }}>
@@ -205,28 +212,37 @@ function OrderCard({ order: o, idx }: { order: OrderRow; idx: number }) {
         </div>
 
         {/* Row 2: amount + date + confirmation */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: o.tx_hash ? 10 : 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: o.txHash ? 10 : 0 }}>
           <div>
             <p style={{ fontSize: 15, fontWeight: 700, fontFamily: 'monospace', color: 'var(--text-1)' }}>
-              {Number(o.amount).toFixed(4)} {o.token_from}
+              {Number(o.amount).toFixed(4)} {o.tokenFrom}
             </p>
             <p style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 2 }}>{date}</p>
+            {o.chain && <p style={{ fontSize: 10, color: 'var(--text-3)', marginTop: 1 }}>{o.chain}</p>}
           </div>
           <span style={{
             padding: '4px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600,
-            background: o.confirmation_type === 'voice' ? 'var(--accent-soft)' : 'rgba(239,68,68,0.1)',
-            color: o.confirmation_type === 'voice' ? '#a78bfa' : '#fca5a5',
-            border: `1px solid ${o.confirmation_type === 'voice' ? 'var(--border-glow)' : 'rgba(239,68,68,0.2)'}`,
+            background: o.confirmationType === 'voice' ? 'var(--accent-soft)' : 'rgba(239,68,68,0.1)',
+            color: o.confirmationType === 'voice' ? '#a78bfa' : '#fca5a5',
+            border: `1px solid ${o.confirmationType === 'voice' ? 'var(--border-glow)' : 'rgba(239,68,68,0.2)'}`,
           }}>
-            {o.confirmation_type === 'voice' ? '🎙 Voz' : '🔐 Doble'}
+            {o.confirmationType === 'voice' ? '🎙 Voz' : '🔐 Doble'}
           </span>
         </div>
 
-        {/* Row 3: TX hash */}
-        {o.tx_hash && (
-          <div style={{ paddingTop: 10, borderTop: '1px solid var(--border-soft)', marginTop: 4 }}>
+        {/* Row 3: estimated receive */}
+        {o.estimatedReceive && o.estimatedReceive !== '0' && (
+          <div style={{ paddingTop: 8, borderTop: '1px solid var(--border-soft)', marginTop: 4 }}>
+            <p style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Recibido estimado</p>
+            <p style={{ fontSize: 12, fontFamily: 'monospace', color: '#4ade80' }}>{o.estimatedReceive} {o.tokenTo}</p>
+          </div>
+        )}
+
+        {/* Row 4: TX hash */}
+        {o.txHash && (
+          <div style={{ paddingTop: 8, borderTop: '1px solid var(--border-soft)', marginTop: 4 }}>
             <p style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>TX Hash</p>
-            <p style={{ fontSize: 11, fontFamily: 'monospace', color: '#818cf8', wordBreak: 'break-all', lineHeight: 1.4 }}>{o.tx_hash}</p>
+            <p style={{ fontSize: 11, fontFamily: 'monospace', color: '#818cf8', wordBreak: 'break-all', lineHeight: 1.4 }}>{o.txHash}</p>
           </div>
         )}
       </div>

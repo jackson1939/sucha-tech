@@ -23,6 +23,23 @@ export async function POST(req: NextRequest) {
     if (intent.action === 'unknown')
       return NextResponse.json({ error: true, code: 'UNKNOWN_INTENT', message: 'No pude entender la intención. Ej: "compra 0.1 SOL"' }, { status: 422 });
 
+    if (intent.action === 'balance') {
+      const token = intent.tokenFrom ?? 'SOL';
+      const prices = await getPrices([token, 'SOL', 'ETH', 'BTC', 'USDC']).catch(() => ({}));
+      return NextResponse.json({
+        simulationId: `bal-${uuidv4()}`,
+        intent: { action: 'balance', tokenFrom: token, tokenTo: token, amount: 0 },
+        quote: { from: token, to: token, amount: '0', estimatedReceive: '0' },
+        fees: { network: '0', protocol: '0' },
+        requiresDoubleConfirmation: false,
+        asrConfidence,
+        route: { provider: 'oracle', routeId: 'balance-check' },
+        latencyMs: Date.now() - startMs,
+        prices,
+        isBalanceQuery: true,
+      });
+    }
+
     const amount    = intent.amount ?? 0;
     const fromToken = intent.tokenFrom ?? 'USDC';
     const toToken   = intent.tokenTo   ?? 'SOL';

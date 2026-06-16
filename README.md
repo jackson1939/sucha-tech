@@ -170,7 +170,19 @@ anchor deploy --provider.cluster devnet
 ├── onchain/                Anchor program (Rust)
 ├── gabezo/                 Entorno de pruebas con mocks
 ├── scripts/                migrate.js, test-apis.js
-└── types/                  Tipos TypeScript compartidos
+├── types/                  Tipos TypeScript compartidos
+└── tsconfig.json
 ```
+
+---
+
+## Contribuyentes
+
+* [Dax Kenji Tellez Duran](https://github.com/Kenyi001)
+* [jackson1939](https://github.com/jackson1939)
+* [Vctor11180](https://github.com/Vctor11180)
+* [Ronald Augusto R](https://github.com/ronaldaugust2002)
+
+---
 
 > **Nota legal:** Prototipo educativo para hackathon. Todas las operaciones se realizan en Solana Devnet. No es asesoría financiera.

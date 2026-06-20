@@ -1,6 +1,6 @@
 name: Vibe Broker — Suite de pruebas Gabezo
 version: "1.0"
-base_url: "http://localhost:4000"
+base_url: "http://localhost:3000"
 
 cases:
 

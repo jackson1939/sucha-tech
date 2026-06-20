@@ -1,0 +1,32 @@
+{
+  "cli": { "version": ">= 10.0.0" },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": { "buildType": "apk" }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://sucha-tech.vercel.app",
+        "EXPO_PUBLIC_SOLANA_NETWORK": "devnet",
+        "EXPO_PUBLIC_SOLANA_RPC_URL": "https://api.devnet.solana.com",
+        "EXPO_PUBLIC_RECEIPT_PROGRAM_ID": "DLUY5F8d4TtRxWXgJQMXH7hhaDTDbnqtkZsVbWDtMsYx"
+      }
+    },
+    "production": {
+      "android": { "buildType": "app-bundle" },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://sucha-tech.vercel.app",
+        "EXPO_PUBLIC_SOLANA_NETWORK": "devnet",
+        "EXPO_PUBLIC_SOLANA_RPC_URL": "https://api.devnet.solana.com",
+        "EXPO_PUBLIC_RECEIPT_PROGRAM_ID": "DLUY5F8d4TtRxWXgJQMXH7hhaDTDbnqtkZsVbWDtMsYx"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
